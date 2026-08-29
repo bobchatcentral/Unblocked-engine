@@ -11,7 +11,7 @@ function createWindow() {
     height: 720,
     minWidth: 640,
     minHeight: 520,
-  icon: path.join(__dirname, '1024x1024.png')
+  //broken image code, will add back later
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
