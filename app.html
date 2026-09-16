@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Site Capturer</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="app-header">
+      <div class="seal"></div>
+      <div>
+        <h1>Site Capturer</h1>
+        <p class="sub">Turn any website into one offline HTML file you can open anywhere.</p>
+      </div>
+    </header>
+
+    <section class="panel">
+      <label class="field">
+        <span class="label">Website address</span>
+        <input id="url" type="text" placeholder="https://example.com" autofocus>
+      </label>
+
+      <div class="grid">
+        <label class="field">
+          <span class="label">Max pages</span>
+          <input id="maxPages" type="number" min="1" max="300" value="25">
+        </label>
+        <label class="field">
+          <span class="label">Link depth</span>
+          <input id="maxDepth" type="number" min="0" max="10" value="3">
+        </label>
+        <label class="field">
+          <span class="label">Parallel tabs</span>
+          <input id="concurrency" type="number" min="1" max="6" value="3">
+        </label>
+      </div>
+
+      <p class="hint">
+        Site Capturer opens the page in a hidden, minimized window and lets its JavaScript run
+        before saving, so JS-heavy sites are captured too. It then follows same-site links (up
+        to the limits above) and packs everything — text, images, fonts, styles — into one file
+        you'll be asked where to save. No installs beyond this extension, and no internet
+        connection is needed to open the result later.
+      </p>
+
+      <div class="actions">
+        <button id="startBtn" class="btn primary">Capture site</button>
+        <button id="cancelBtn" class="btn ghost" hidden>Cancel</button>
+      </div>
+    </section>
+
+    <section class="panel log-panel" id="logPanel" hidden>
+      <div class="log-head">
+        <span id="logTitle">Capturing…</span>
+        <span id="logCount" class="muted"></span>
+      </div>
+      <div id="log" class="log"></div>
+    </section>
+
+    <section class="panel result-panel" id="resultPanel" hidden>
+      <div id="resultIcon" class="result-icon">✓</div>
+      <div class="result-text">
+        <div id="resultTitle" class="result-title">Saved</div>
+        <div id="resultPath" class="result-path"></div>
+      </div>
+      <div class="actions">
+        <button id="newBtn" class="btn primary">Capture another</button>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

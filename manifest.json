@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Site Capturer",
+  "version": "1.0.0",
+  "description": "Capture any website — including JavaScript-heavy pages — into one self-contained offline HTML file. Runs natively on ChromeOS, no Linux/Crostini needed.",
+  "minimum_chrome_version": "116",
+  "permissions": ["tabs", "windows", "scripting", "downloads"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Site Capturer"
+  }
+}

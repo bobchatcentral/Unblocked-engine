@@ -1,48 +1,80 @@
-# Website Saver
+# Site Capturer — ChromeOS Extension
 
-A desktop app (macOS, Windows, Linux) that takes a URL, fully renders the site
-— including JavaScript-heavy pages — crawls its internal links, and saves the
-whole thing as **one self-contained HTML file**. That file has every image,
-font, and stylesheet inlined, so it opens in any browser, fully offline, with
-no additional downloads.
+Same idea as the desktop app, but built as a Chrome Extension instead of an
+Electron app — this is the native ChromeOS path, with **no Linux/Crostini
+required**. It runs entirely inside Chrome, the same browser ChromeOS itself
+is built on.
 
-## How it works
+## How it's different from the desktop app
 
-- Built with **Electron**, which bundles its own Chromium browser engine. The
-  packaged app end users install has everything it needs inside it — they
-  never install Node.js, a browser, or any other runtime.
-- For each page, a hidden Chromium window loads the URL and lets its
-  JavaScript run and render normally (so React/Vue/etc. sites work), then a
-  script inlines every external stylesheet, image, and font as embedded data
-  and captures the resulting HTML.
-- It follows links found on each page (same-domain by default) up to the page
-  and depth limits you set, then bundles every captured page into one HTML
-  file with a simple sidebar you can click through — no server required.
+| | Desktop app (Electron) | This extension |
+|---|---|---|
+| Renders JS-heavy pages | hidden `BrowserWindow` | a real (minimized, hidden) browser tab |
+| Reads the rendered page | `webContents.executeJavaScript` | `chrome.scripting.executeScript` |
+| Downloads CSS/images cross-origin | Node `fetch` (no CORS at all) | `fetch()` from the extension, exempt from CORS via `host_permissions` |
+| Saves the final file | native Save dialog + `fs.writeFileSync` | `chrome.downloads.download()` (native ChromeOS "Save As") |
+| Install | `.dmg` / `.exe` / `.AppImage` | Add the extension — nothing else |
 
-## Important limitation (by design)
+The output is the same: one self-contained `.html` file with every page's
+text, styles, images, and fonts embedded, browsable offline via a small
+built-in sidebar.
 
-The saved file is a **static snapshot**. Since the goal is a single file that
-runs with no extra downloads and no server, the original page's own
-JavaScript is stripped out of the saved copy. Static content, layout, images,
-and text render exactly as captured. Things that depend on the *live* site's
-own scripts after the snapshot is taken — search boxes that call an API,
-infinite-scroll loading, login forms, animations driven by JS — won't be
-interactive in the archive. Everything visible at capture time is preserved;
-behavior that requires the original server or live scripts is not.
+## Try it now (unpacked, for yourself or testing)
 
-For very large sites, keep "Max pages" reasonable (the default of 40 is a
-good starting point) — each page is rendered in a real Chromium instance, so
-capturing hundreds of pages will take a while and produce a large file.
+1. Open `chrome://extensions` (works identically on ChromeOS).
+2. Turn on **Developer mode** (top-right toggle).
+3. Click **Load unpacked** and select this `site-capturer-chromeos` folder.
+4. Click the new Site Capturer icon in the toolbar — it opens the app in a
+   new tab. Enter a URL, adjust the limits if you like, and click **Capture
+   site**. When it finishes, Chrome's normal Save dialog opens.
 
+No build step, no Node, no npm — it's plain HTML/CSS/JS, which is also why it
+works on ChromeOS with zero developer-mode Linux container involved.
 
-## Notes for advanced users
+## Publishing it properly (so it installs like any other ChromeOS app)
 
-## Tuning performance
+1. Zip the contents of this folder (not the folder itself — `manifest.json`
+   should be at the zip's root).
+2. Create a one-time [Chrome Web Store developer account](https://chrome.google.com/webstore/devconsole) (a small one-time registration fee applies).
+3. Upload the zip, fill in the listing details, and submit for review.
+4. Once approved, anyone — including on ChromeOS — installs it with one click
+   from the Web Store, exactly like any other extension. Still nothing to
+   download separately, no Crostini, no sideloading required.
 
-- `MAX_CONCURRENCY` in `crawler.js` (default 3) controls how many pages
-  render in parallel. Raising it speeds up large crawls but uses more
-  memory/CPU; lowering it is gentler on slower machines.
-- `PAGE_LOAD_SETTLE_MS` in `crawler.js` (default 1200ms) is the extra wait
-  after a page reports "loaded" before capturing it, to give JS-rendered
-  content time to finish painting. Increase it for very JS-heavy sites that
-  render slowly; decrease it to speed up simple sites.
+If you'd rather keep it private/internal (e.g. just for your own devices or
+a small team), you can also publish as **unlisted** or use **Chrome Enterprise
+policy** to force-install it on managed ChromeOS devices — both skip public
+review while still giving a normal one-click install experience.
+
+## Permissions this extension asks for, and why
+
+- `tabs` / `windows` — to open a hidden window and load pages in it for capture.
+- `scripting` — to read each page's fully-rendered DOM after its JavaScript runs.
+- `downloads` — to save the finished file via ChromeOS's native Save dialog.
+- `host_permissions: <all_urls>` — needed so capturing works on *any* site you
+  point it at, and so the extension can fetch that site's CSS/images without
+  CORS blocking it (a plain webpage can't do this; an extension with granted
+  host permissions can).
+
+## Same honest limitations as the desktop app
+
+- Login-gated/paywalled content isn't handled specially — only what's
+  reachable without extra authentication steps gets captured.
+- Live/interactive behavior (checkout flows, live search, WebSockets) won't
+  work in the saved copy — it's a rendered snapshot, not a working backend.
+- Very large sites are capped by "Max pages"; images over ~4MB are left as
+  remote links instead of embedded, to keep the file size sane.
+- A handful of pages may fail to load if a site actively blocks automated
+  browsing — those are logged and skipped rather than stopping the whole run.
+
+## Project layout
+
+```
+manifest.json      Extension manifest (Manifest V3)
+background.js       Opens the app tab when the toolbar icon is clicked
+app.html/.css/.js    The app's UI — same look as the desktop app
+lib/crawler.js       Drives hidden tabs, crawls links (chrome.tabs/scripting)
+lib/resourceInliner.js  Fetches CSS/images/fonts, converts to data URIs
+lib/bundler.js        Packs captured pages into the final single HTML file
+lib/base64.js          Browser-safe base64 helpers (no Node Buffer available)
+```
